@@ -5,7 +5,7 @@ editable by hand, and can design alternative sequences encoding the same peptide
 repeated elements in one construct (P2A, linkers, tags, a second copy of a gene) are not
 identical at the DNA level.
 
-**[Open the tool](https://YOUR-USERNAME.github.io/codon-optimization/)**
+**[Open the tool](https://danionella.github.io/codon-tool/)**
 
 Everything lives in one self-contained `index.html`: no build step, no dependencies, no
 network calls. Download it and it works offline.
