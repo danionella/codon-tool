@@ -221,8 +221,7 @@
 
   <div class="panel" id="mainPanel" style="display:none">
     <div class="seqhead"><span class="seqname">Optimized sequence</span>
-      <span class="btns"><button class="ghost" id="ed-reset">Reset</button>
-        <button id="ed-copy" class="icon" title="Copy sequence to clipboard" aria-label="Copy sequence to clipboard"></button></span></div>
+      <span class="btns"><button id="ed-copy" class="icon" title="Copy sequence to clipboard" aria-label="Copy sequence to clipboard"></button></span></div>
     <div class="small" id="ed-meta"></div>
     <div id="ed-cmp"></div>
     <div class="seqedit" id="ed-grid"></div>
@@ -959,10 +958,6 @@ $('species').onchange = () => run(false);
 $('wantvar').onchange = () => { $('n').disabled = !$('wantvar').checked; };
 $('ed-copy').innerHTML = ICON_COPY;
 $('ed-copy').onclick = () => copy(editorSequence(), 'Sequence', $('ed-copy'));
-$('ed-reset').onclick = () => {
-  editor.codons = editor.start.slice();
-  buildEditor(editor.peptide, editor.start.join(''), editor.ref, editor.refName, editor.opts);
-};
 $('run').onclick = () => run(false);
 $('again').onclick = () => run(true);
 $('inp').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) run(false); });
