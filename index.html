@@ -70,6 +70,9 @@
     font-weight: 600; cursor: pointer; }
   button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
   button.icon { padding: 0 9px; }
+  .capbtn { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+  .capbtn .cap { font-size: 10.5px; line-height: 1; color: var(--muted); user-select: none;
+    -webkit-user-select: none; pointer-events: none; }
   button.icon svg { display: block; width: 14px; height: 14px; stroke: currentColor; fill: none;
     stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   button:active { transform: translateY(1px); }
@@ -221,7 +224,7 @@
 
   <div class="panel" id="mainPanel" style="display:none">
     <div class="seqhead"><span class="seqname">Optimized sequence</span>
-      <span class="btns"><button id="ed-copy" class="icon" title="Copy sequence to clipboard" aria-label="Copy sequence to clipboard"></button></span></div>
+      <span class="btns"><span class="capbtn"><button id="ed-copy" class="icon" title="Copy sequence to clipboard" aria-label="Copy sequence to clipboard"></button><span class="cap" aria-hidden="true">copy</span></span></span></div>
     <div class="small" id="ed-meta"></div>
     <div id="ed-cmp"></div>
     <div class="seqedit" id="ed-grid"></div>
@@ -536,8 +539,8 @@ const ICON_COPY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9"
 const ICON_DONE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 
 function copyButton(extra, label, attrs) {
-  return '<button class="icon ' + (extra || '') + '" title="' + label + '" aria-label="' + label + '" ' +
-    (attrs || '') + '>' + ICON_COPY + '</button>';
+  return '<span class="capbtn"><button class="icon ' + (extra || '') + '" title="' + label + '" aria-label="' +
+    label + '" ' + (attrs || '') + '>' + ICON_COPY + '</button><span class="cap" aria-hidden="true">copy</span></span>';
 }
 
 function flashDone(btn) {
