@@ -97,7 +97,8 @@
   .cod { display: inline-block; width: 3ch; text-align: center; cursor: pointer; border-radius: 3px;
     vertical-align: top; white-space: nowrap; }
   .cod:hover { background: var(--line); }
-  .cod .a { color: var(--muted); font-size: 11px; line-height: 1.3; white-space: nowrap; }
+  .cod .a { color: var(--muted); font-size: 11px; line-height: 1.3; white-space: nowrap;
+    -webkit-user-select: none; user-select: none; }
   /* every base sits in its own 1ch box, so a bold glyph (wider in some monospace
      fallbacks) can no longer push the codon past 3ch and break the residue row */
   .cod .u, .cod .x { display: inline-block; width: 1ch; overflow: visible; }
@@ -220,8 +221,7 @@
 
   <div class="panel" id="mainPanel" style="display:none">
     <div class="seqhead"><span class="seqname">Optimized sequence</span>
-      <span class="btns"><button class="ghost" id="ed-reset">Reset</button>
-        <button id="ed-copy" class="icon" title="Copy sequence to clipboard" aria-label="Copy sequence to clipboard"></button></span></div>
+      <span class="btns"><button id="ed-copy" class="icon" title="Copy sequence to clipboard" aria-label="Copy sequence to clipboard"></button></span></div>
     <div class="small" id="ed-meta"></div>
     <div id="ed-cmp"></div>
     <div class="seqedit" id="ed-grid"></div>
@@ -238,7 +238,6 @@
     <i>D. cerebrum</i>). All other species from CoCoPUTs: Alexaki A et al. (2019),
     <a href="https://doi.org/10.1016/j.jmb.2019.04.021">Codon and codon-pair usage tables</a>,
     J Mol Biol 431:2434, computed over the RefSeq assemblies named beside each table.</p>
-    <p>Built with Claude. Free to use, copy and modify.</p>
   </footer>
 </div>
 <div class="toast" id="toast"></div>
@@ -927,13 +926,30 @@ async function run(newSeed) {
   }
 }
 
+let downAt = null;   // where the pointer went down, to tell a click from a drag-select
+$('ed-grid').addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
 $('ed-grid').addEventListener('click', (e) => {
   const cell = e.target.closest('.cod');
   if (!cell) return;
   e.stopPropagation();
+  if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) return;
   if (cell.classList.contains('open')) closePop(); else openPop(cell);
 });
 document.addEventListener('click', (e) => { if (!e.target.closest('.pop')) closePop(); });
+/* selecting within a codon grid and copying should give plain DNA: drop the residue
+   letters (which may be A, C, G or T themselves) and the line break inside each codon.
+   Wider selections keep the browser's own copy, which already skips the unselectable letters. */
+document.addEventListener('copy', (e) => {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || sel.rangeCount !== 1 || !e.clipboardData) return;
+  const range = sel.getRangeAt(0), anc = range.commonAncestorContainer;
+  const el = anc.nodeType === 1 ? anc : anc.parentElement;
+  if (!el || !el.closest('.seqedit, .cod')) return;
+  const frag = range.cloneContents();
+  frag.querySelectorAll('.a').forEach((a) => a.remove());
+  e.preventDefault();
+  e.clipboardData.setData('text/plain', frag.textContent.replace(/\s+/g, ''));
+});
 window.addEventListener('resize', closePop);
 $('cancel').onclick = () => { cancelled = true; };
 speciesSelect();
@@ -941,10 +957,6 @@ $('species').onchange = () => run(false);
 $('wantvar').onchange = () => { $('n').disabled = !$('wantvar').checked; };
 $('ed-copy').innerHTML = ICON_COPY;
 $('ed-copy').onclick = () => copy(editorSequence(), 'Sequence', $('ed-copy'));
-$('ed-reset').onclick = () => {
-  editor.codons = editor.start.slice();
-  buildEditor(editor.peptide, editor.start.join(''), editor.ref, editor.refName, editor.opts);
-};
 $('run').onclick = () => run(false);
 $('again').onclick = () => run(true);
 $('inp').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) run(false); });
