@@ -9,8 +9,8 @@
  *                        to ~1). Edit a number, add a species, and the tool picks it up.
  *   - restrictionSites:  recognition sequence → enzyme/motif name, flagged in results.
  *
- * Loaded by web/index.html as a <script> (defines window.CODON_DATA) and by
- * web/codon.js via require(). Plain data only — no code, no dependencies.
+ * Loaded by docs/index.html as a <script> (defines window.CODON_DATA) and by
+ * docs/codon.js via require(). Plain data only — no code, no dependencies.
  */
 var CODON_DATA = {
   geneticCode: {
