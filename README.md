@@ -42,6 +42,49 @@ Every result is re-checked before it is shown: ACGT only, a whole number of codo
 translation identical to the input, no internal stop, and no two sequences identical. The
 check also runs on every hand edit, and reports only when something is wrong.
 
+## Programmatic use (library & CLI)
+
+The same engine is packaged as a dependency-free module, `codon.js`, so you can call it
+from your own code or a pipeline instead of the page. It runs in Node and in the browser
+(as a `<script src="codon.js">` that defines `window.CodonLib`).
+
+As a library:
+
+```js
+const { optimize } = require('./codon.js');
+
+const result = optimize({ sequence: 'MACGTWKLLAGT', species: 'tax9606', cpg: 'strong', variants: 2 });
+console.log(result.optimized);              // "ATG..."
+console.log(result.variants[0].sequence);   // an alternative encoding the same peptide
+```
+
+`optimize(options)` returns a plain, JSON-serializable object: `optimized`, `peptide`,
+`optimizedStats` (length, GC, CpG count and percent, mean codon fraction, longest internal
+repeat, restriction/motif `flags`), a `variants` array, the `parameters` used, and
+`checksPassed`/`checks`. Options mirror the web form and all have the same defaults:
+`species` (default `dcerebrum`), `mode` (`auto`/`pep`/`dna`), `cpg` (`off`/`mild`/`strong`,
+default `mild`), `variants`, `k`, `tries`, `minFrac`, `homopolymer`, `bothStrands`,
+`context` (sequences variants must stay distinct from), and `seed` (same seed → same
+output). `optimize.species()` lists the available codon tables.
+
+As a command line (`node cli.js`, or `codon-optimize` once installed):
+
+```bash
+node cli.js --seq MACGTWKLLAGT --species tax9606 --cpg strong --variants 3   # JSON on stdout
+echo MACGTWKLLAGT | node cli.js --fasta                                       # FASTA instead
+node cli.js --list-species                                                     # table ids
+node cli.js --help
+```
+
+There is no hosted HTTP endpoint: the tool is a static page, so there is no server to run
+one. If you want a "submit a sequence, get JSON back" web service, wrap `optimize()` in a
+handler for whatever runs your code (a serverless function, or a small local server) — it
+is a pure function with no I/O.
+
+`codon.js` is a mirror of the algorithm embedded in `index.html`. `npm test` drives the
+actual page in a headless browser and asserts it produces byte-identical output to
+`codon.js` across a range of inputs, so the library and the tool cannot silently diverge.
+
 ## Codon tables
 
 33 species, each computed from genome annotations and compiled into the page.
