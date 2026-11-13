@@ -7,8 +7,11 @@ identical at the DNA level.
 
 **[Open the tool](https://danionella.github.io/codon-tool/)**
 
-Everything lives in one self-contained `index.html`: no build step, no dependencies, no
-network calls. Download it and it works offline.
+The site is three files in [`web/`](web/) — the page [`index.html`](web/index.html), the engine
+[`codon.js`](web/codon.js) it loads, and the data [`tables.js`](web/tables.js) (codon usage and
+restriction sites) — with no build step, no third-party dependencies and no network calls.
+Download the folder and it works offline. GitHub Pages serves only `web/`, so the page, engine
+and data are public but this README and the test are not.
 
 ## What it does
 
@@ -42,9 +45,62 @@ Every result is re-checked before it is shown: ACGT only, a whole number of codo
 translation identical to the input, no internal stop, and no two sequences identical. The
 check also runs on every hand edit, and reports only when something is wrong.
 
+## Programmatic use (library)
+
+The engine is a dependency-free module, [`web/codon.js`](web/codon.js), that the page itself
+loads — so it is the same code the tool runs, not a copy. You can call it from your own code,
+in Node or in the browser.
+
+In Node:
+
+```js
+const { optimize } = require('./web/codon.js');
+
+const result = optimize({ sequence: 'MACGTWKLLAGT', species: 'tax9606', cpg: 'strong', variants: 2 });
+console.log(result.optimized);              // "ATG..."
+console.log(result.variants[0].sequence);   // an alternative encoding the same peptide
+```
+
+In a browser (served from the GitHub Pages site, so no install), it defines `window.CodonLib`:
+
+```html
+<script src="https://danionella.github.io/codon-tool/codon.js"></script>
+<script>
+  const r = CodonLib.optimize({ sequence: 'MACGTWKLLAGT', variants: 2 });
+  console.log(r.optimized);
+</script>
+```
+
+`optimize(options)` returns a plain, JSON-serializable object: `optimized`, `peptide`,
+`optimizedStats` (length, GC, CpG count and percent, mean codon fraction, longest internal
+repeat, restriction/motif `flags`), a `variants` array, the `parameters` used, and
+`checksPassed`/`checks`. Options mirror the web form and all have the same defaults:
+`species` (default `dcerebrum`), `mode` (`auto`/`pep`/`dna`), `cpg` (`off`/`mild`/`strong`,
+default `mild`), `variants`, `k`, `tries`, `minFrac`, `homopolymer`, `bothStrands`,
+`context` (sequences variants must stay distinct from), and `seed` (same seed → same
+output). `optimize.species()` lists the available codon tables.
+
+There is no hosted HTTP endpoint: the tool is a static page, so there is no server to run
+one. If you want a "submit a sequence, get JSON back" web service, or to call it from another
+language, wrap `optimize()` in a handler for whatever runs your code (a serverless function,
+or a small local server) — it is a pure function with no I/O.
+
+The page loads `codon.js` for the whole algorithm, so there is only one implementation. The
+page keeps its own interactive, cancellable sampling loop on top of it; the test in
+[`test/`](test/) drives the actual page in a headless browser and asserts it produces
+byte-identical output to `codon.js`'s `optimize()` across a range of inputs, so the two
+cannot silently diverge. Run it with `node test/equivalence.test.js` (needs
+[Playwright](https://playwright.dev) available, e.g. `npm i -D playwright`).
+
 ## Codon tables
 
-33 species, each computed from genome annotations and compiled into the page.
+33 species, each computed from genome annotations. The numbers live in
+[`web/tables.js`](web/tables.js) as plain data — a shared `geneticCode` (codon → amino acid),
+then per-species `frequencies` (how often each codon is used among its synonyms), plus the
+`restrictionSites` that results are flagged against. To adjust a value, add a species, or add
+an enzyme, edit that file; nothing else needs to change. (It is a `.js` file rather than
+`.json` or `.yaml` only so the page can load it offline without a build step or a parser
+library — the contents are otherwise just data.)
 
 *Danionella cerebrum* is the default. It was computed from the MAKER annotation of
 Kadobianskyi et al. (2019), by resolving each transcript's reading frame against its

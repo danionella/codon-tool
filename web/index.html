@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fish codon optimization</title>
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #fbfaf8; --panel: #ffffff; --ink: #1c1b19; --muted: #6a675f;
+    --line: #e3e0d8; --accent: #2f6f5e; --accent-ink: #ffffff;
+    --warn: #8a5a1c; --warn-bg: #fdf3e2; --ok: #2f6f5e; --hl: rgba(47, 111, 94, .20);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #16171a; --panel: #1e2024; --ink: #e9e7e2; --muted: #9b978e;
+      --line: #32353b; --accent: #5fb49c; --accent-ink: #10221d;
+      --warn: #e0b070; --warn-bg: #2d2518; --ok: #5fb49c; --hl: rgba(95, 180, 156, .26);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #16171a; --panel: #1e2024; --ink: #e9e7e2; --muted: #9b978e;
+    --line: #32353b; --accent: #5fb49c; --accent-ink: #10221d;
+    --warn: #e0b070; --warn-bg: #2d2518; --ok: #5fb49c; --hl: rgba(95, 180, 156, .26);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 5px; }
+  textarea, input, select { width: 100%; background: var(--bg); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; font: inherit; }
+  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; resize: vertical; }
+  .optlist { display: grid; gap: 14px; margin-top: 14px; }
+  .opt { display: grid; grid-template-columns: minmax(130px, 190px) 1fr; gap: 6px 34px; align-items: start; }
+  .opt.wide { grid-template-columns: 1fr; gap: 6px; }
+  .opt.wide textarea { width: 100%; }
+  .opt > div { min-width: 0; }
+  .opt label { font-size: 11px; margin-bottom: 3px; }
+  .opt input, .opt select { padding: 4px 7px; font-size: 13px; width: 100%; }
+  .opt .help { font-size: 12.5px; color: var(--muted); margin: 0; align-self: center; }
+  .opt .help b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 620px) { .opt { grid-template-columns: 1fr; gap: 6px; } .opt .help { align-self: start; } }
+  .inline-field { display: flex; align-items: center; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .inline-field label { margin: 0; white-space: nowrap; }
+  .inline-field select { width: auto; max-width: 22em; padding: 4px 8px; font-size: 13.5px; }
+  .grid input[type=number] { width: 5em; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; }
+  details { margin-top: 10px; }
+  details > summary { cursor: pointer; font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); list-style: none; display: inline-flex; align-items: center; gap: 5px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: "\25b8"; display: inline-block; transition: transform .15s; }
+  details[open] > summary::before { transform: rotate(90deg); }
+  #nvar { width: 58px; padding: 5px 7px; }
+  button { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 30px; min-height: 30px; box-sizing: border-box; flex: none; vertical-align: middle;
+    padding: 0 11px;
+    line-height: 1; background: var(--accent);
+    color: var(--accent-ink); border: 0; border-radius: 6px; font: inherit; font-size: 13px;
+    font-weight: 600; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 500; }
+  button.icon { padding: 0 9px; }
+  .capbtn { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; }
+  .capbtn .cap { font-size: 10.5px; line-height: 1; color: var(--muted); user-select: none;
+    -webkit-user-select: none; pointer-events: none; }
+  button.icon svg { display: block; width: 14px; height: 14px; stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  button:active { transform: translateY(1px); }
+  .check { display: flex; align-items: center; gap: 7px; font-size: 14px; }
+  .check input { width: auto; }
+  .check label { margin: 0; text-transform: none; letter-spacing: 0; font-size: 14px; color: var(--ink); }
+  .plainseq { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13px; line-height: 1.5; word-break: break-all; margin-top: 12px; }
+  .prog { width: 110px; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; }
+  .prog i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .08s linear; }
+  .scroll { overflow-x: auto; }
+  #ed-cmp { margin-top: 10px; }
+  #ed-cmp table { font-size: 12.5px; }
+  #ed-cmp td.worse { color: var(--warn); }
+  #ed-cmp td.better { color: var(--ok); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { font-weight: 600; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .seqhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btns { display: inline-flex; align-items: center; gap: 8px; }
+  .seqname { font-weight: 600; font-size: 15px; }
+  .seqedit { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 13.5px; margin-top: 12px; line-height: 1.15; word-break: break-all; }
+  .cod { display: inline-block; width: 3ch; text-align: center; cursor: pointer; border-radius: 3px;
+    vertical-align: top; white-space: nowrap; }
+  .cod:hover { background: var(--line); }
+  .cod .a { color: var(--muted); font-size: 11px; line-height: 1.3; white-space: nowrap;
+    -webkit-user-select: none; user-select: none; }
+  /* every base sits in its own 1ch box, so a bold glyph (wider in some monospace
+     fallbacks) can no longer push the codon past 3ch and break the residue row */
+  .cod .u, .cod .x { display: inline-block; width: 1ch; overflow: visible; }
+  .cod .u { opacity: .55; }
+  .noref .cod .u { opacity: 1; }   /* nothing to compare against yet: don't dim everything */
+  .cod .x { font-weight: 700; color: var(--ink); background: var(--hl); border-radius: 2px; }
+  .cod.open { outline: 2px solid var(--accent); }
+  .cod.ro { cursor: default; }
+  .cod.ro:hover { background: none; }
+  .pop { position: absolute; z-index: 50; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.18); min-width: 150px; }
+  .pop h4 { margin: 2px 6px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  .pop button { display: flex; width: 100%; align-items: center; gap: 8px; background: transparent;
+    color: var(--ink); font-weight: 500; padding: 4px 6px; height: auto; min-height: 0; border-radius: 5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+  .pop button:hover { background: var(--line); }
+  .pop button.sel { color: var(--accent); font-weight: 700; }
+  .pop .pb { flex: 1; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+  .pop .pb i { display: block; height: 100%; background: var(--accent); }
+  .pop .pv { font-size: 11px; color: var(--muted); min-width: 2.8em; text-align: right; }
+  .seqblock { border-top: 1px solid var(--line); padding: 12px 0; }
+  .note { font-size: 13px; color: var(--muted); margin-top: 10px; }
+  .flagpill { display: inline-block; background: var(--warn-bg); color: var(--warn); border-radius: 20px; padding: 1px 9px; font-size: 11.5px; margin-left: 4px; }
+  .err { color: var(--warn); background: var(--warn-bg); border-radius: 7px; padding: 10px 12px; margin-top: 12px; }
+  .small { font-size: 12px; color: var(--muted); }
+  .ok { color: var(--ok); }
+  footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
+    font-size: 12px; line-height: 1.6; color: var(--muted); }
+  footer a { color: var(--muted); }
+  footer p { margin: 0 0 4px; }
+  .toast { position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg);
+    padding: 9px 16px; border-radius: 20px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fish codon optimization</h1>
+  <p class="sub">Codon-optimizes a peptide or coding sequence. Every codon stays editable by hand.
+  Optionally it also designs alternative sequences for the same peptide.</p>
+
+  <div class="panel">
+    <label for="inp">Peptide or coding sequence</label>
+    <textarea id="inp" rows="2" spellcheck="false">GSGATNFSLLKQAGDVEENPGP</textarea>
+    <div class="inline-field">
+      <label for="species">Codon table</label>
+      <select id="species" title="Species whose codon frequencies are used (CoCoPUTs, RefSeq genomes)"></select>
+    </div>
+    <div class="row">
+      <button id="run">Optimize</button>
+      <button id="again" class="ghost">Resample</button>
+      <span class="check"><input type="checkbox" id="wantvar"><label for="wantvar">also make</label></span>
+      <input id="n" type="number" min="1" max="12" value="3" style="width:58px;padding:5px 7px" disabled>
+      <span class="small">variants that differ from it</span>
+      <button id="cancel" class="ghost" style="display:none">Cancel</button>
+      <span class="prog" id="prog" style="display:none"><i></i></span>
+      <span id="timing" class="small" style="margin-left:auto"></span>
+    </div>
+    <details>
+      <summary>Options</summary>
+      <div class="optlist">
+        <div class="opt">
+          <div><label for="mode">Read input as</label>
+            <select id="mode"><option value="auto">auto</option><option value="pep">peptide</option><option value="dna">DNA</option></select></div>
+          <p class="help">Auto treats the input as DNA when it is only A, C, G, T and a whole number of
+          codons. Force it when a peptide happens to look like DNA, such as <b>GATTACA</b>.</p>
+        </div>
+        <div class="opt">
+          <div><label for="cpgmode">Avoid CpG</label>
+            <select id="cpgmode"><option value="strong">strong</option><option value="mild" selected>mild</option><option value="off">off</option></select></div>
+          <p class="help">How hard to steer away from CpG dinucleotides, which are methylation targets and
+          are associated with transgene silencing. On a 450 aa protein: off gives ~4.5 % CpG, mild ~2.5 %,
+          strong ~0.7 %. Strong costs little in codon frequency but lowers GC by a couple of points.</p>
+        </div>
+        <div class="opt">
+          <div><label for="minfrac">Minimum codon fraction</label>
+            <input id="minfrac" type="number" min="0" max="0.5" step="0.01" value="0.08"></div>
+          <p class="help">Codons used less often than this share of their amino acid are never chosen.
+          Raise it to stay with common codons, lower it for more variety when many variants are wanted.
+          An amino acid always keeps at least its top two codons.</p>
+        </div>
+        <div class="opt">
+          <div><label for="homo">Flag homopolymer runs of</label>
+            <input id="homo" type="number" min="4" max="12" value="7"></div>
+          <p class="help">Runs of this many identical bases get flagged. Long runs cause polymerase
+          slippage and are a common reason synthesis vendors reject a construct.</p>
+        </div>
+        <div class="opt">
+          <div><label for="k">Repeat window (bp)</label>
+            <input id="k" type="number" min="6" max="40" value="12"></div>
+          <p class="help">The length of identical stretch counted as a repeat. Variants are built to share
+          nothing this long with each other or with the optimized sequence, and internal repeats of this
+          length are reported. 12 to 15 suits short elements, 16 to 20 whole coding sequences.</p>
+        </div>
+        <div class="opt">
+          <div><label for="tries">Samples per sequence</label>
+            <input id="tries" type="number" min="20" max="3000" step="20" value="300"></div>
+          <p class="help">How many candidate sequences are drawn before the best is kept. Runtime scales
+          with this; 300 is ample for short elements, and raising it helps mainly when the repeat window
+          is tight.</p>
+        </div>
+        <div class="opt">
+          <div><span class="check"><input type="checkbox" id="both" checked><label for="both">Check both strands</label></span></div>
+          <p class="help">Compare reverse complements too when looking for repeats and restriction sites.
+          Worth leaving on: inverted repeats recombine, and Type IIS sites such as BsaI are not
+          palindromic.</p>
+        </div>
+        <div class="opt wide">
+          <label for="ctx">Other sequences in the construct</label>
+          <p class="help" style="margin-bottom:6px">Sequences already in your plasmid that the output
+          should stay different from — an existing P2A, another copy of the gene, a linker. Anything
+          shorter than the repeat window is ignored.</p>
+          <textarea id="ctx" rows="3" spellcheck="false" placeholder="one per line, or comma separated"></textarea>
+        </div>
+      </div>
+    </details>
+    <div id="err"></div>
+  </div>
+
+  <div class="panel" id="mainPanel" style="display:none">
+    <div class="seqhead"><span class="seqname">Optimized sequence</span>
+      <span class="btns"><span class="capbtn"><button id="ed-copy" class="icon" title="Copy sequence to clipboard" aria-label="Copy sequence to clipboard"></button><span class="cap" aria-hidden="true">copy</span></span></span></div>
+    <div class="small" id="ed-meta"></div>
+    <div id="ed-cmp"></div>
+    <div class="seqedit" id="ed-grid"></div>
+    <p class="note" id="ed-note"></p>
+  </div>
+
+  <div id="out"></div>
+
+  <footer>
+    <p>Codon tables: <i>Danionella cerebrum</i> computed from the MAKER annotation of
+    Kadobianskyi M, Schulze L, Schuelke M, Judkewitz B (2019),
+    <a href="https://doi.org/10.1038/s41597-019-0161-z">Hybrid genome assembly and annotation of
+    <i>Danionella translucida</i></a>, Sci Data 6:156 (the species was later described as
+    <i>D. cerebrum</i>). All other species from CoCoPUTs: Alexaki A et al. (2019),
+    <a href="https://doi.org/10.1016/j.jmb.2019.04.021">Codon and codon-pair usage tables</a>,
+    J Mol Biol 431:2434, computed over the RefSeq assemblies named beside each table.</p>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="tables.js"></script>
+<script src="codon.js"></script>
+<script>
+/* ===== UI (the optimization engine lives in codon.js, loaded above) ===== */
+const $ = (id) => document.getElementById(id);
+function speciesSelect() {
+  let html = '', group = null;
+  for (const t of Object.keys(CODON_TABLES)) {
+    const e = CODON_TABLES[t];
+    if (e.group !== group) {
+      if (group) html += '</optgroup>';
+      html += '<optgroup label="' + e.group + '">';
+      group = e.group;
+    }
+    html += '<option value="' + t + '"' + (t === DEFAULT_TAXID ? ' selected' : '') + '>' +
+      e.label + '</option>';
+  }
+  $('species').innerHTML = html + '</optgroup>';
+}
+const tableData = () => CODON_TABLES[$('species').value || DEFAULT_TAXID].data;
+let table = buildTable(CODON_TABLES[DEFAULT_TAXID].data, 0.08);
+let current = 1;
+
+const ICON_COPY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/>' +
+  '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const ICON_DONE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+
+function copyButton(extra, label, attrs) {
+  return '<span class="capbtn"><button class="icon ' + (extra || '') + '" title="' + label + '" aria-label="' +
+    label + '" ' + (attrs || '') + '>' + ICON_COPY + '</button><span class="cap" aria-hidden="true">copy</span></span>';
+}
+
+function flashDone(btn) {
+  btn.innerHTML = ICON_DONE + (btn._label || '');
+  clearTimeout(btn._t2);
+  btn._t2 = setTimeout(() => { btn.innerHTML = ICON_COPY + (btn._label || ''); }, 1200);
+}
+
+function toast(msg) {
+  const t = $('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 1400);
+}
+
+async function copy(text, what, btn) {
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e2) { toast('could not copy'); return; }
+    document.body.removeChild(ta);
+  }
+  toast(what + ' copied');
+  if (btn) flashDone(btn);
+}
+
+function flagPills(list) {
+  if (!list.length) return '<span class="small">none</span>';
+  const shown = list.slice(0, 6).map((f) => '<span class="flagpill">' + f + '</span>').join('');
+  return list.length > 6
+    ? shown + '<span class="flagpill" title="' + list.slice(6).join(', ') + '">+' +
+      (list.length - 6) + ' more</span>'
+    : shown;
+}
+
+const cleanSeq = (s) => s.toUpperCase().replace(/[^A-Z*]/g, '');
+const cpgPct = (s) => (100 * cpgOf(s) / Math.max(1, s.length - 1)).toFixed(2);
+const nDiff = (a, b) => { let n = 0; for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) n++; return n; };
+
+function readInput(table) {
+  const raw = $('inp').value.trim();
+  if (!raw) throw new Error('enter a peptide or a coding sequence');
+  const s = cleanSeq(raw);
+  const mode = $('mode').value;
+  const looksDna = s.length >= 3 && s.length % 3 === 0 && /^[ACGTU]+$/.test(s);
+  if (mode === 'dna' || (mode === 'auto' && looksDna))
+    return { peptide: translate(table, s), dna: s.replace(/U/g, 'T') };
+  for (const a of s) if (!(a in table.options)) throw new Error('"' + a + '" is not an amino-acid letter');
+  return { peptide: s, dna: null };
+}
+
+/* ---- checks that always run ---- */
+function sanityCheck(seqs, peptide, table) {
+  const bad = [];
+  seqs.forEach((s, i) => {
+    const name = seqs.length > 1 ? 'sequence ' + (i + 1) : 'the sequence';
+    if (!/^[ACGT]+$/.test(s)) bad.push(name + ': contains a non-ACGT character');
+    if (s.length % 3) bad.push(name + ': length ' + s.length + ' is not a whole number of codons');
+    if (s.length !== peptide.length * 3) bad.push(name + ': ' + s.length + ' bp for a ' + peptide.length + ' aa peptide');
+    let tr = '';
+    try { tr = translate(table, s); } catch (e) { bad.push(name + ': ' + e.message); return; }
+    if (tr !== peptide) {
+      let at = 0; while (at < tr.length && tr[at] === peptide[at]) at++;
+      bad.push(name + ': translation differs at residue ' + (at + 1) +
+        ' (' + (tr[at] || '-') + ' instead of ' + (peptide[at] || '-') + ')');
+    }
+    const stop = tr.indexOf('*');
+    if (stop >= 0 && stop < tr.length - 1) bad.push(name + ': stop codon at residue ' + (stop + 1));
+  });
+  if (new Set(seqs).size !== seqs.length) bad.push('two sequences are identical');
+  return bad;
+}
+
+/* ---- output formats ---- */
+function toFastaWith(seqs, names) {
+  return seqs.map((s, i) => '>' + names[i] + '\n' + (s.match(/.{1,60}/g) || []).join('\n')).join('\n') + '\n';
+}
+
+function toGenbank(seqs, peptide, names) {
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  const d = new Date();
+  const date = String(d.getDate()).padStart(2, '0') + '-' + months[d.getMonth()] + '-' + d.getFullYear();
+  return seqs.map((s, i) => {
+    const name = (names && names[i]) || ('sequence_' + (i + 1));
+    const head = 'LOCUS       ' + name.padEnd(20) + String(s.length).padStart(7) + ' bp    DNA     linear   SYN ' + date;
+    const tr = (peptide.match(/.{1,58}/g) || []);
+    const cds = ['FEATURES             Location/Qualifiers',
+      '     CDS             1..' + s.length,
+      '                     /codon_start=1',
+      '                     /note="codon optimized for Danionella"',
+      '                     /translation="' + tr[0] + (tr.length > 1 ? '' : '"')]
+      .concat(tr.slice(1).map((l, j) => '                     ' + l + (j === tr.length - 2 ? '"' : '')));
+    const origin = ['ORIGIN'];
+    for (let p = 0; p < s.length; p += 60) {
+      const chunk = s.slice(p, p + 60).toLowerCase();
+      origin.push(String(p + 1).padStart(9) + ' ' + (chunk.match(/.{1,10}/g) || []).join(' '));
+    }
+    return [head, 'DEFINITION  ' + name + '.', 'ACCESSION   .', 'KEYWORDS    .',
+      'SOURCE      synthetic DNA construct'].concat(cds, origin, ['//']).join('\n');
+  }).join('\n') + '\n';
+}
+
+function codonRun(seq, peptide, ref) {
+  // same wrapping codon-over-residue layout as the editor, read only
+  let html = '';
+  for (let i = 0; i < peptide.length; i++) {
+    const cur = seq.slice(3 * i, 3 * i + 3), r = ref ? ref.slice(3 * i, 3 * i + 3) : null;
+    let bases = '';
+    for (let q = 0; q < 3; q++)
+      bases += '<span class="' + (r && r[q] !== cur[q] ? 'x' : 'u') + '">' + cur[q] + '</span>';
+    html += '<span class="cod ro" title="codon ' + (i + 1) + '">' + bases +
+      '<br><span class="a">' + peptide[i] + '</span></span>';
+  }
+  return html;
+}
+
+/* ---- the optimized sequence, editable codon by codon ---- */
+const editor = { codons: [], start: [], ref: null, refName: '', peptide: '', opts: null };
+const editorSequence = () => editor.codons.join('');
+
+function codonCell(i) {
+  const aa = editor.peptide[i], cur = editor.codons[i];
+  const base = editor.ref || editor.start.join('');   // input DNA, else what was generated
+  const ref = base ? base.slice(3 * i, 3 * i + 3) : null;
+  let bases = '';
+  for (let q = 0; q < 3; q++)
+    bases += '<span class="' + (ref && ref[q] !== cur[q] ? 'x' : 'u') + '">' + cur[q] + '</span>';
+  return '<span class="cod" data-i="' + i + '" title="codon ' + (i + 1) + ' \u00b7 ' + aa + ' \u00b7 ' + cur +
+    ' (' + table.frac[cur].toFixed(2) + ')">' + bases + '<br><span class="a">' + aa + '</span></span>';
+}
+
+function closePop() {
+  const p = document.getElementById('pop');
+  if (p) p.remove();
+  document.querySelectorAll('.cod.open').forEach((c) => c.classList.remove('open'));
+}
+
+function openPop(cell) {
+  closePop();
+  const i = +cell.dataset.i, aa = editor.peptide[i], cur = editor.codons[i];
+  const all = table.options[aa].slice();
+  if (!all.includes(cur)) all.push(cur);
+  all.sort((x, y) => table.frac[y] - table.frac[x]);
+  const pop = document.createElement('div');
+  pop.className = 'pop'; pop.id = 'pop';
+  pop.innerHTML = '<h4>' + aa + ' \u00b7 codon ' + (i + 1) + '</h4>' + all.map((c) =>
+    '<button data-c="' + c + '" class="' + (c === cur ? 'sel' : '') + '">' + c +
+    '<span class="pb"><i style="width:' + (table.frac[c] * 100).toFixed(0) + '%"></i></span>' +
+    '<span class="pv">' + (table.frac[c] * 100).toFixed(0) + ' %</span></button>').join('');
+  document.body.appendChild(pop);
+  const r = cell.getBoundingClientRect();
+  const left = Math.min(r.left + window.scrollX,
+    window.scrollX + document.documentElement.clientWidth - pop.offsetWidth - 10);
+  pop.style.top = (r.bottom + window.scrollY + 4) + 'px';
+  pop.style.left = Math.max(window.scrollX + 6, left) + 'px';
+  cell.classList.add('open');
+  pop.querySelectorAll('button').forEach((b) => {
+    b.onclick = (e) => {
+      e.stopPropagation();
+      editor.codons[i] = b.dataset.c;
+      cell.outerHTML = codonCell(i);
+      closePop();
+      updateMeta();
+    };
+  });
+}
+
+function buildEditor(peptide, seq, ref, refName, opts) {
+  editor.peptide = peptide;
+  editor.codons = (seq.match(/.{3}/g) || []);
+  editor.start = editor.codons.slice();
+  editor.ref = ref; editor.refName = refName; editor.opts = opts;
+  $('mainPanel').style.display = 'block';
+  if (peptide.length > 1200) {
+    $('ed-grid').className = 'plainseq';
+    $('ed-grid').innerHTML = seq;
+    $('ed-note').textContent = 'Hand editing is offered for peptides up to 1200 residues; this one has ' +
+      peptide.length + ', so the sequence is shown as plain text. The Copy button still works.';
+    updateMeta();
+    return;
+  }
+  let html = '';
+  for (let i = 0; i < peptide.length; i++) html += codonCell(i);
+  $('ed-grid').className = 'seqedit' + (ref ? '' : ' noref');
+  $('ed-grid').innerHTML = html;
+  $('ed-note').innerHTML = 'Click any codon to pick a synonym; the bar and percentage are its ' +
+    'frequency in the codon table.' + (refName === 'input'
+      ? ' Bases that differ from the sequence you pasted are highlighted.' : '');
+  updateMeta();
+}
+
+function compareRows(ref, cur, opts) {
+  // only meaningful when the user pasted a sequence to start from
+  if (!ref || editor.refName !== 'input') return '';
+  const pep = editor.peptide;
+  const cell = (v, cls) => '<td' + (cls ? ' class="' + cls + '"' : '') + '>' + v + '</td>';
+  const row = (name, s, other) => {
+    const f = meanFrac(table, s), fo = meanFrac(table, other);
+    const cp = cpgOf(s), cpo = cpgOf(other);
+    const fl = flags(s, opts.homo);
+    return '<tr><td>' + name + '</td>' +
+      cell((gcOf(s) * 100).toFixed(1)) +
+      cell(cp + ' (' + cpgPct(s) + ' %)', cp === cpo ? '' : (cp < cpo ? 'better' : 'worse')) +
+      cell(f.toFixed(2), Math.abs(f - fo) < 0.005 ? '' : (f > fo ? 'better' : 'worse')) +
+      cell(selfRepeat(s, opts.both)) +
+      '<td style="text-align:left">' + flagPills(fl) + '</td></tr>';
+  };
+  return '<div class="scroll"><table><thead><tr><th></th><th>GC %</th><th>CpG</th>' +
+    '<th>mean codon frac</th><th>internal repeat</th><th style="text-align:left">flags</th></tr></thead>' +
+    '<tbody>' + row('input', ref, cur) + row('optimized', cur, ref) + '</tbody></table></div>' +
+    '<p class="note" style="margin-top:6px">' + nDiff(ref, cur) + ' of ' + cur.length +
+    ' bases changed (' + (100 * nDiff(ref, cur) / cur.length).toFixed(0) + ' %), ' +
+    'all silent: both sequences encode the same ' + pep.length + ' residues.</p>';
+}
+
+function updateMeta() {
+  const s = editorSequence(), o = editor.opts;
+  const others = (o.variants || []).concat(o.context || []);
+  const fl = flags(s, o.homo);
+  const ok = translate(table, s) === editor.peptide;
+  const parts = [s.length + ' bp', 'GC ' + (gcOf(s) * 100).toFixed(1) + ' %',
+    'CpG ' + cpgOf(s) + ' (' + cpgPct(s) + ' %)',
+    'mean codon frac ' + meanFrac(table, s).toFixed(2),
+    'internal repeat ' + selfRepeat(s, o.both) + ' bp'];
+  if (others.length) parts.push('longest shared ' + Math.max.apply(null, others.map((x) => maxShared(s, x, o.both))) + ' bp');
+  if (fl.length) parts.push(flagPills(fl));
+  if (!ok) parts.push('<span class="err">TRANSLATION BROKEN</span>');   // checked always, shown only on failure
+  $('ed-meta').innerHTML = parts.join(' \u00b7 ');
+  $('ed-cmp').innerHTML = compareRows(editor.ref, s, o);
+}
+
+/* ---- optional alternative variants ---- */
+function renderVariants(seqs, peptide, opts) {
+  if (!seqs.length) { $('out').innerHTML = ''; return; }
+  const both = opts.both, homo = opts.homo;
+  const ctx = opts.context.concat([opts.main]);
+  let html = '<div class="panel"><div class="seqname" style="margin-bottom:10px">Alternative variants</div>' +
+    '<div class="scroll"><table><thead><tr><th>variant</th><th>bp</th><th>GC %</th><th>CpG</th>' +
+    '<th>CpG %</th><th>mean codon frac</th><th>longest shared</th><th>internal repeat</th>' +
+    '<th style="text-align:left">flags</th></tr></thead><tbody>';
+  seqs.forEach((s, i) => {
+    const others = seqs.filter((_, j) => j !== i).concat(ctx);
+    const fl = flags(s, homo);
+    html += '<tr><td>' + (i + 1) + '</td><td>' + s.length + '</td><td>' + (gcOf(s) * 100).toFixed(1) +
+      '</td><td>' + cpgOf(s) + '</td><td>' + cpgPct(s) + '</td><td>' + meanFrac(table, s).toFixed(2) +
+      '</td><td>' + Math.max.apply(null, others.map((o) => maxShared(s, o, both))) +
+      '</td><td>' + selfRepeat(s, both) + '</td><td style="text-align:left">' +
+      flagPills(fl) + '</td></tr>';
+  });
+  html += '</tbody></table></div><p class="note"><b>Longest shared</b> is the longest perfectly identical ' +
+    'stretch with the optimized sequence, another variant or a context sequence \u2014 what drives ' +
+    'recombination between repeats, mispriming and vendor repeat filters.</p>';
+
+  html += '<div class="row" style="margin:0 0 4px">' +
+    copyButton('', 'Copy every sequence to clipboard', 'id="cps"') + '</div>';
+  seqs.forEach((s, i) => {
+    html += '<div class="seqblock"><div class="seqhead"><span class="seqname">variant ' + (i + 1) +
+      '</span>' + copyButton('ghost cp1', 'Copy this variant to clipboard', 'data-i="' + i + '"') + '</div>' +
+      '<div class="seqedit">' + codonRun(s, peptide, opts.main) + '</div></div>';
+  });
+  const bad = sanityCheck([opts.main].concat(seqs), peptide, table);
+  html += '<p class="note">' + (bad.length
+    ? '<span class="err">Checks failed: ' + bad.join('; ') + '</span>'
+    : '<span class="ok">Checks passed</span>: every sequence is ' + seqs[0].length +
+      ' bp of ACGT, translates to the ' + peptide.length + ' aa input, carries no internal stop, and ' +
+      'no two are identical. Bases differing from the optimized sequence are highlighted; the translation ' +
+      'is written underneath.') + '</p></div>';
+  $('out').innerHTML = html;
+
+  const all = [opts.main].concat(seqs);
+  const cps = $('cps');
+  cps._label = '<span>all ' + all.length + '</span>';
+  cps.innerHTML = ICON_COPY + cps._label;
+  cps.onclick = () => copy(all.join('\n'), 'Sequences', cps);
+  document.querySelectorAll('.cp1').forEach((b) => {
+    b.onclick = () => copy(seqs[+b.dataset.i], 'variant ' + (+b.dataset.i + 1), b);
+  });
+}
+
+/* ---- design loop, sliced so the page stays responsive and can be stopped ---- */
+let running = false, cancelled = false;
+const yieldUI = () => new Promise((r) => setTimeout(r, 0));
+
+function setProgress(frac, label) {
+  $('prog').firstChild.style.width = Math.round(Math.min(1, frac) * 100) + '%';
+  if (label) $('timing').textContent = label;
+}
+
+async function designAsync(peptide, n, opt, from) {
+  const k = opt.k, both = opt.bothStrands;
+  const rnd = mulberry32(opt.seed);
+  const pool = new Set();
+  const addPool = (s) => { for (let i = 0; i + k <= s.length; i++) pool.add(canon(s.slice(i, i + k), both)); };
+  opt.context.forEach(addPool);
+  const out = [];
+  const total = n * opt.tries;
+  let done = 0, mark = performance.now();
+  for (let v = 0; v < n; v++) {
+    let best = null;
+    for (let t = 0; t < opt.tries; t++) {
+      const cand = sampleOne(table, peptide, rnd, 2, opt.cpgPenalty);
+      const hits = kmerHits(cand, k, pool, both);
+      const soft = softCost(table, cand, opt.cpgWeight);
+      if (!best || hits < best.hits || (hits === best.hits && soft < best.soft))
+        best = { seq: cand, hits: hits, soft: soft };
+      done++;
+      if (best.hits === 0 && t > opt.tries / 4) { done += opt.tries - 1 - t; break; }
+      if (performance.now() - mark > 40) {
+        setProgress((from + done / total) / (from ? 2 : 1), 'sampling\u2026');
+        await yieldUI();
+        if (cancelled) throw new Error('cancelled');
+        mark = performance.now();
+      }
+    }
+    for (let round = 0; best.hits && round < 60; round++) {
+      const fixed = touchUp(table, best.seq, peptide, k, pool, both, rnd, 60, opt.cpgWeight);
+      const stuck = fixed.hits === best.hits && fixed.seq === best.seq;
+      best = { seq: fixed.seq, hits: fixed.hits, soft: softCost(table, fixed.seq, opt.cpgWeight) };
+      if (stuck) break;
+      setProgress((from + done / total) / (from ? 2 : 1), 'resolving repeats\u2026');
+      await yieldUI();
+      if (cancelled) throw new Error('cancelled');
+    }
+    out.push(best.seq);
+    addPool(best.seq);
+  }
+  return out;
+}
+
+/* ---- run ---- */
+async function run(newSeed) {
+  if (running) return;
+  $('err').innerHTML = '';
+  try {
+    table = buildTable(tableData(), parseFloat($('minfrac').value) || 0);
+    const input = readInput(table);
+    const peptide = input.peptide, dna = input.dna;
+    const k = Math.max(6, Math.min(40, parseInt($('k').value) || 12));
+    const tries = Math.max(20, Math.min(3000, parseInt($('tries').value) || 300));
+    const both = $('both').checked;
+    const homo = Math.max(4, parseInt($('homo').value) || 7);
+    const cpgMode = $('cpgmode').value;
+    const cpgPenalty = cpgMode === 'off' ? 1 : cpgMode === 'mild' ? 0.5 : 0.1;
+    const cpgWeight = cpgMode === 'off' ? 0 : cpgMode === 'mild' ? 2 : 8;
+    const context = $('ctx').value.split(/[\n,]+/).map(cleanSeq).filter((s) => s.length >= k);
+    const nVar = $('wantvar').checked ? Math.max(1, Math.min(12, parseInt($('n').value) || 1)) : 0;
+    if (newSeed) current = (Date.now() % 100000) | 0;
+
+    running = true; cancelled = false;
+    $('cancel').style.display = ''; $('prog').style.display = '';
+    $('run').disabled = true; $('again').disabled = true;
+    setProgress(0, 'sampling\u2026');
+
+    const t0 = performance.now();
+    const common = { k: k, tries: tries, bothStrands: both, seed: current,
+                     cpgPenalty: cpgPenalty, cpgWeight: cpgWeight };
+    const main = (await designAsync(peptide, 1,
+      Object.assign({ context: context }, common), 0))[0];
+    const variants = nVar
+      ? await designAsync(peptide, nVar,
+          Object.assign({}, common, { context: context.concat([main]), seed: current + 1 }), 1)
+      : [];
+    const ms = performance.now() - t0;
+
+    buildEditor(peptide, main, dna, dna ? 'input' : 'self',
+      { both: both, homo: homo, context: context, cpgMode: cpgMode, variants: variants });
+    renderVariants(variants, peptide, { both: both, homo: homo, context: context, main: main });
+    $('timing').textContent = peptide.length + ' aa \u00b7 ' +
+      (nVar ? (nVar + 1) + ' sequences' : '1 sequence') + ' in ' + ms.toFixed(0) + ' ms';
+    const bad = sanityCheck([main].concat(variants), peptide, table);
+    if (bad.length) $('err').innerHTML = '<div class="err">Checks failed: ' + bad.join('; ') + '</div>';
+  } catch (e) {
+    if (e.message === 'cancelled') {
+      $('timing').textContent = 'cancelled';
+    } else {
+      $('mainPanel').style.display = 'none';
+      $('out').innerHTML = '';
+      $('err').innerHTML = '<div class="err">' + e.message + '</div>';
+    }
+  } finally {
+    running = false;
+    $('cancel').style.display = 'none'; $('prog').style.display = 'none';
+    $('run').disabled = false; $('again').disabled = false;
+    setProgress(0);
+  }
+}
+
+let downAt = null;   // where the pointer went down, to tell a click from a drag-select
+$('ed-grid').addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
+$('ed-grid').addEventListener('click', (e) => {
+  const cell = e.target.closest('.cod');
+  if (!cell) return;
+  e.stopPropagation();
+  if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 4) return;
+  if (cell.classList.contains('open')) closePop(); else openPop(cell);
+});
+document.addEventListener('click', (e) => { if (!e.target.closest('.pop')) closePop(); });
+/* selecting within a codon grid and copying should give plain DNA: drop the residue
+   letters (which may be A, C, G or T themselves) and the line break inside each codon.
+   Wider selections keep the browser's own copy, which already skips the unselectable letters. */
+document.addEventListener('copy', (e) => {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || sel.rangeCount !== 1 || !e.clipboardData) return;
+  const range = sel.getRangeAt(0), anc = range.commonAncestorContainer;
+  const el = anc.nodeType === 1 ? anc : anc.parentElement;
+  if (!el || !el.closest('.seqedit, .cod')) return;
+  const frag = range.cloneContents();
+  frag.querySelectorAll('.a').forEach((a) => a.remove());
+  e.preventDefault();
+  e.clipboardData.setData('text/plain', frag.textContent.replace(/\s+/g, ''));
+});
+window.addEventListener('resize', closePop);
+$('cancel').onclick = () => { cancelled = true; };
+speciesSelect();
+$('species').onchange = () => run(false);
+$('wantvar').onchange = () => { $('n').disabled = !$('wantvar').checked; };
+$('ed-copy').innerHTML = ICON_COPY;
+$('ed-copy').onclick = () => copy(editorSequence(), 'Sequence', $('ed-copy'));
+$('run').onclick = () => run(false);
+$('again').onclick = () => run(true);
+$('inp').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) run(false); });
+run(false);
+
+/* when embedded in another page, report our height so the iframe can resize */
+if (window.parent !== window) {
+  let last = 0;
+  const post = () => {
+    const px = Math.ceil(document.documentElement.scrollHeight);
+    if (Math.abs(px - last) > 2) { last = px; parent.postMessage({ codonHeight: px }, '*'); }
+  };
+  if (window.ResizeObserver) new ResizeObserver(post).observe(document.body);
+  window.addEventListener('load', post);
+  setInterval(post, 1000);
+  post();
+}
+</script>
+</body>
+</html>
