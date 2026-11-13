@@ -7,10 +7,11 @@ identical at the DNA level.
 
 **[Open the tool](https://danionella.github.io/codon-tool/)**
 
-The site is two files in [`web/`](web/) — [`index.html`](web/index.html) and the engine
-[`codon.js`](web/codon.js) it loads — with no build step, no third-party dependencies and no
-network calls. Download the folder and it works offline. GitHub Pages serves only `web/`, so
-the page and the library are public but this README and the CLI/tests are not.
+The site is three files in [`web/`](web/) — the page [`index.html`](web/index.html), the engine
+[`codon.js`](web/codon.js) it loads, and the data [`tables.js`](web/tables.js) (codon usage and
+restriction sites) — with no build step, no third-party dependencies and no network calls.
+Download the folder and it works offline. GitHub Pages serves only `web/`, so the page, engine
+and data are public but this README and the test are not.
 
 ## What it does
 
@@ -93,7 +94,13 @@ cannot silently diverge. Run it with `node test/equivalence.test.js` (needs
 
 ## Codon tables
 
-33 species, each computed from genome annotations and compiled into the page.
+33 species, each computed from genome annotations. The numbers live in
+[`web/tables.js`](web/tables.js) as plain data — a shared `geneticCode` (codon → amino acid),
+then per-species `frequencies` (how often each codon is used among its synonyms), plus the
+`restrictionSites` that results are flagged against. To adjust a value, add a species, or add
+an enzyme, edit that file; nothing else needs to change. (It is a `.js` file rather than
+`.json` or `.yaml` only so the page can load it offline without a build step or a parser
+library — the contents are otherwise just data.)
 
 *Danionella cerebrum* is the default. It was computed from the MAKER annotation of
 Kadobianskyi et al. (2019), by resolving each transcript's reading frame against its
