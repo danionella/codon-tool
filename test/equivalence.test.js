@@ -11,9 +11,9 @@
  */
 const path = require('path');
 const assert = require('assert');
-const CodonLib = require('../web/codon.js');
+const CodonLib = require('../docs/codon.js');
 
-const PAGE = 'file://' + path.resolve(__dirname, '..', 'web', 'index.html');
+const PAGE = 'file://' + path.resolve(__dirname, '..', 'docs', 'index.html');
 
 const CASES = [
   { name: 'default peptide',        opts: { sequence: 'MACGTWKLLAGT' } },

@@ -7,10 +7,10 @@ identical at the DNA level.
 
 **[Open the tool](https://danionella.github.io/codon-tool/)**
 
-The site is three files in [`web/`](web/) — the page [`index.html`](web/index.html), the engine
-[`codon.js`](web/codon.js) it loads, and the data [`tables.js`](web/tables.js) (codon usage and
+The site is three files in [`docs/`](docs/) — the page [`index.html`](docs/index.html), the engine
+[`codon.js`](docs/codon.js) it loads, and the data [`tables.js`](docs/tables.js) (codon usage and
 restriction sites) — with no build step, no third-party dependencies and no network calls.
-Download the folder and it works offline. GitHub Pages serves only `web/`, so the page, engine
+Download the folder and it works offline. GitHub Pages serves only `docs/`, so the page, engine
 and data are public but this README and the test are not.
 
 ## What it does
@@ -47,14 +47,14 @@ check also runs on every hand edit, and reports only when something is wrong.
 
 ## Programmatic use (library)
 
-The engine is a dependency-free module, [`web/codon.js`](web/codon.js), that the page itself
+The engine is a dependency-free module, [`docs/codon.js`](docs/codon.js), that the page itself
 loads — so it is the same code the tool runs, not a copy. You can call it from your own code,
 in Node or in the browser.
 
 In Node:
 
 ```js
-const { optimize } = require('./web/codon.js');
+const { optimize } = require('./docs/codon.js');
 
 const result = optimize({ sequence: 'MACGTWKLLAGT', species: 'tax9606', cpg: 'strong', variants: 2 });
 console.log(result.optimized);              // "ATG..."
@@ -95,7 +95,7 @@ cannot silently diverge. Run it with `node test/equivalence.test.js` (needs
 ## Codon tables
 
 33 species, each computed from genome annotations. The numbers live in
-[`web/tables.js`](web/tables.js) as plain data — a shared `geneticCode` (codon → amino acid),
+[`docs/tables.js`](docs/tables.js) as plain data — a shared `geneticCode` (codon → amino acid),
 then per-species `frequencies` (how often each codon is used among its synonyms), plus the
 `restrictionSites` that results are flagged against. To adjust a value, add a species, or add
 an enzyme, edit that file; nothing else needs to change. (It is a `.js` file rather than

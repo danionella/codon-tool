@@ -2,7 +2,7 @@
  * codon.js — codon optimization engine for the Danionella codon tool.
  *
  * The whole optimization algorithm lives here: sampling, scoring, repeat
- * removal and metrics. The web page (web/index.html) loads this file, so the
+ * removal and metrics. The web page (docs/index.html) loads this file, so the
  * tool and this module run the same code. Use it from your own program to get
  * plain data instead of a drawn page: optimize(options) returns a result object.
  *
@@ -256,7 +256,7 @@
     return t / n;
   }
 
-  // (pure, mirrors web/index.html's sanityCheck)
+  // (pure, mirrors docs/index.html's sanityCheck)
   function sanityCheck(seqs, peptide, table) {
     const bad = [];
     seqs.forEach((s, i) => {
