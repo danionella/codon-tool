@@ -13,7 +13,7 @@ const path = require('path');
 const assert = require('assert');
 const CodonLib = require('../codon.js');
 
-const PAGE = 'file://' + path.resolve(__dirname, '..', 'index.html');
+const PAGE = 'file://' + path.resolve(__dirname, '..', 'web', 'index.html');
 
 const CASES = [
   { name: 'default peptide',        opts: { sequence: 'MACGTWKLLAGT' } },

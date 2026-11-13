@@ -1,12 +1,12 @@
 /*
  * codon.js — codon optimization engine for the Danionella codon tool.
  *
- * This is the same algorithm as the web page (index.html); it is kept as a
+ * This is the same algorithm as the web page (web/index.html); it is kept as a
  * standalone module so it can be used from Node, a browser <script> tag, or the
  * command line (cli.js), returning plain data instead of drawing a page.
  *
  * The algorithm block below (codon tables, sampling, scoring, repeat removal and
- * metrics) is identical to the one in index.html. test/equivalence.test.js runs
+ * metrics) is identical to the one in web/index.html. test/equivalence.test.js runs
  * the page and this module on the same input and seed and asserts byte-identical
  * output, so the two cannot silently drift — if you change the algorithm in one
  * file, change it in the other and that test will keep you honest.
@@ -285,7 +285,7 @@
     return t / n;
   }
 
-  // (pure, mirrors index.html's sanityCheck)
+  // (pure, mirrors web/index.html's sanityCheck)
   function sanityCheck(seqs, peptide, table) {
     const bad = [];
     seqs.forEach((s, i) => {

@@ -7,8 +7,9 @@ identical at the DNA level.
 
 **[Open the tool](https://danionella.github.io/codon-tool/)**
 
-Everything lives in one self-contained `index.html`: no build step, no dependencies, no
-network calls. Download it and it works offline.
+The site is one self-contained file, [`web/index.html`](web/index.html): no build step, no
+dependencies, no network calls. Download it and it works offline. (The page is kept in
+`web/` so that GitHub Pages serves only the tool, not this README or the source.)
 
 ## What it does
 
@@ -81,7 +82,7 @@ one. If you want a "submit a sequence, get JSON back" web service, wrap `optimiz
 handler for whatever runs your code (a serverless function, or a small local server) — it
 is a pure function with no I/O.
 
-`codon.js` is a mirror of the algorithm embedded in `index.html`. `npm test` drives the
+`codon.js` is a mirror of the algorithm embedded in `web/index.html`. `npm test` drives the
 actual page in a headless browser and asserts it produces byte-identical output to
 `codon.js` across a range of inputs, so the library and the tool cannot silently diverge.
 

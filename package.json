@@ -7,7 +7,7 @@
   "repository": { "type": "git", "url": "https://github.com/danionella/codon-tool.git" },
   "main": "codon.js",
   "bin": { "codon-optimize": "cli.js" },
-  "files": ["codon.js", "cli.js", "index.html", "README.md"],
+  "files": ["codon.js", "cli.js", "web/index.html", "README.md"],
   "scripts": {
     "test": "node test/equivalence.test.js"
   },
