@@ -17,7 +17,12 @@
 (function (root, factory) {
   const api = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
-  if (root) { root.CodonLib = api; }
+  if (root) {
+    root.CodonLib = api;
+    // Also expose each name on the global object so the web page (index.html),
+    // which loads this file as a plain <script>, can call them directly.
+    for (const k in api) root[k] = api[k];
+  }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
@@ -434,9 +439,16 @@
     optimize: optimize,
     designCore: designCore,
     speciesList: speciesList,
+    // high-level + metrics
     buildTable: buildTable, translate: translate, revcomp: revcomp,
     gcOf: gcOf, cpgOf: cpgOf, meanFrac: meanFrac, flags: flags,
-    selfRepeat: selfRepeat, maxShared: maxShared, sanityCheck: sanityCheck,
+    selfRepeat: selfRepeat, maxShared: maxShared, kmerSet: kmerSet,
+    sanityCheck: sanityCheck,
+    // sampling / scoring primitives (used by the page's own designAsync)
+    mulberry32: mulberry32, sampleOne: sampleOne, canon: canon,
+    kmerHits: kmerHits, hitPositions: hitPositions, softCost: softCost,
+    touchUp: touchUp,
+    // data
     CODON_TABLES: CODON_TABLES, DEFAULT_TAXID: DEFAULT_TAXID, SITES: SITES,
   };
 });

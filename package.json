@@ -5,9 +5,9 @@
   "license": "MIT",
   "homepage": "https://danionella.github.io/codon-tool/",
   "repository": { "type": "git", "url": "https://github.com/danionella/codon-tool.git" },
-  "main": "codon.js",
+  "main": "web/codon.js",
   "bin": { "codon-optimize": "cli.js" },
-  "files": ["codon.js", "cli.js", "web/index.html", "README.md"],
+  "files": ["web/codon.js", "web/index.html", "cli.js", "README.md"],
   "scripts": {
     "test": "node test/equivalence.test.js"
   },

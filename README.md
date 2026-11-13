@@ -7,9 +7,10 @@ identical at the DNA level.
 
 **[Open the tool](https://danionella.github.io/codon-tool/)**
 
-The site is one self-contained file, [`web/index.html`](web/index.html): no build step, no
-dependencies, no network calls. Download it and it works offline. (The page is kept in
-`web/` so that GitHub Pages serves only the tool, not this README or the source.)
+The site is two files in [`web/`](web/) — [`index.html`](web/index.html) and the engine
+[`codon.js`](web/codon.js) it loads — with no build step, no third-party dependencies and no
+network calls. Download the folder and it works offline. GitHub Pages serves only `web/`, so
+the page and the library are public but this README and the CLI/tests are not.
 
 ## What it does
 
@@ -45,18 +46,28 @@ check also runs on every hand edit, and reports only when something is wrong.
 
 ## Programmatic use (library & CLI)
 
-The same engine is packaged as a dependency-free module, `codon.js`, so you can call it
-from your own code or a pipeline instead of the page. It runs in Node and in the browser
-(as a `<script src="codon.js">` that defines `window.CodonLib`).
+The engine is a dependency-free module, [`web/codon.js`](web/codon.js), that the page itself
+loads — so it is the same code the tool runs, not a copy. You can call it from your own code
+or a pipeline, in Node or in the browser.
 
-As a library:
+In Node:
 
 ```js
-const { optimize } = require('./codon.js');
+const { optimize } = require('./web/codon.js');
 
 const result = optimize({ sequence: 'MACGTWKLLAGT', species: 'tax9606', cpg: 'strong', variants: 2 });
 console.log(result.optimized);              // "ATG..."
 console.log(result.variants[0].sequence);   // an alternative encoding the same peptide
+```
+
+In a browser (served from the GitHub Pages site, so no install), it defines `window.CodonLib`:
+
+```html
+<script src="https://danionella.github.io/codon-tool/codon.js"></script>
+<script>
+  const r = CodonLib.optimize({ sequence: 'MACGTWKLLAGT', variants: 2 });
+  console.log(r.optimized);
+</script>
 ```
 
 `optimize(options)` returns a plain, JSON-serializable object: `optimized`, `peptide`,
@@ -82,9 +93,10 @@ one. If you want a "submit a sequence, get JSON back" web service, wrap `optimiz
 handler for whatever runs your code (a serverless function, or a small local server) — it
 is a pure function with no I/O.
 
-`codon.js` is a mirror of the algorithm embedded in `web/index.html`. `npm test` drives the
+The page loads `codon.js` for the whole algorithm, so there is only one implementation. The
+page keeps its own interactive, cancellable sampling loop on top of it; `npm test` drives the
 actual page in a headless browser and asserts it produces byte-identical output to
-`codon.js` across a range of inputs, so the library and the tool cannot silently diverge.
+`codon.js`'s `optimize()` across a range of inputs, so the two cannot silently diverge.
 
 ## Codon tables
 

@@ -10,11 +10,11 @@
  *   echo MACGTWKLLAGT | node cli.js --fasta
  *   node cli.js --list-species
  *
- * As a library instead:  const { optimize } = require('./codon.js');
+ * As a library instead:  const { optimize } = require('./web/codon.js');
  */
 'use strict';
 const fs = require('fs');
-const { optimize } = require('./codon.js');
+const { optimize } = require('./web/codon.js');
 
 // exit quietly if the reader (e.g. `| head`) closes the pipe early
 process.stdout.on('error', (e) => { if (e.code === 'EPIPE') process.exit(0); throw e; });

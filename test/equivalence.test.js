@@ -11,7 +11,7 @@
  */
 const path = require('path');
 const assert = require('assert');
-const CodonLib = require('../codon.js');
+const CodonLib = require('../web/codon.js');
 
 const PAGE = 'file://' + path.resolve(__dirname, '..', 'web', 'index.html');
 
