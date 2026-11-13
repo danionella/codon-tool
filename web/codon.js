@@ -1,18 +1,17 @@
 /*
  * codon.js — codon optimization engine for the Danionella codon tool.
  *
- * This is the same algorithm as the web page (web/index.html); it is kept as a
- * standalone module so it can be used from Node, a browser <script> tag, or the
- * command line (cli.js), returning plain data instead of drawing a page.
- *
- * The algorithm block below (codon tables, sampling, scoring, repeat removal and
- * metrics) is identical to the one in web/index.html. test/equivalence.test.js runs
- * the page and this module on the same input and seed and asserts byte-identical
- * output, so the two cannot silently drift — if you change the algorithm in one
- * file, change it in the other and that test will keep you honest.
+ * The whole optimization algorithm lives here: sampling, scoring, repeat
+ * removal and metrics. The web page (web/index.html) loads this file, so the
+ * tool and this module run the same code. Use it from your own program to get
+ * plain data instead of a drawn page: optimize(options) returns a result object.
  *
  * Works both as a CommonJS module (require('./codon.js')) and as a classic
- * browser script (loads window.CodonLib). No build step, no dependencies.
+ * browser script (defines window.CodonLib). No build step, no dependencies.
+ *
+ * test/equivalence.test.js drives the real page and asserts it produces
+ * byte-identical output to this module's optimize(), so the page's interactive
+ * sampling loop and this engine cannot silently diverge.
  */
 (function (root, factory) {
   const api = factory();

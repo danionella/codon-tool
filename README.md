@@ -44,11 +44,11 @@ Every result is re-checked before it is shown: ACGT only, a whole number of codo
 translation identical to the input, no internal stop, and no two sequences identical. The
 check also runs on every hand edit, and reports only when something is wrong.
 
-## Programmatic use (library & CLI)
+## Programmatic use (library)
 
 The engine is a dependency-free module, [`web/codon.js`](web/codon.js), that the page itself
-loads — so it is the same code the tool runs, not a copy. You can call it from your own code
-or a pipeline, in Node or in the browser.
+loads — so it is the same code the tool runs, not a copy. You can call it from your own code,
+in Node or in the browser.
 
 In Node:
 
@@ -79,24 +79,17 @@ default `mild`), `variants`, `k`, `tries`, `minFrac`, `homopolymer`, `bothStrand
 `context` (sequences variants must stay distinct from), and `seed` (same seed → same
 output). `optimize.species()` lists the available codon tables.
 
-As a command line (`node cli.js`, or `codon-optimize` once installed):
-
-```bash
-node cli.js --seq MACGTWKLLAGT --species tax9606 --cpg strong --variants 3   # JSON on stdout
-echo MACGTWKLLAGT | node cli.js --fasta                                       # FASTA instead
-node cli.js --list-species                                                     # table ids
-node cli.js --help
-```
-
 There is no hosted HTTP endpoint: the tool is a static page, so there is no server to run
-one. If you want a "submit a sequence, get JSON back" web service, wrap `optimize()` in a
-handler for whatever runs your code (a serverless function, or a small local server) — it
-is a pure function with no I/O.
+one. If you want a "submit a sequence, get JSON back" web service, or to call it from another
+language, wrap `optimize()` in a handler for whatever runs your code (a serverless function,
+or a small local server) — it is a pure function with no I/O.
 
 The page loads `codon.js` for the whole algorithm, so there is only one implementation. The
-page keeps its own interactive, cancellable sampling loop on top of it; `npm test` drives the
-actual page in a headless browser and asserts it produces byte-identical output to
-`codon.js`'s `optimize()` across a range of inputs, so the two cannot silently diverge.
+page keeps its own interactive, cancellable sampling loop on top of it; the test in
+[`test/`](test/) drives the actual page in a headless browser and asserts it produces
+byte-identical output to `codon.js`'s `optimize()` across a range of inputs, so the two
+cannot silently diverge. Run it with `node test/equivalence.test.js` (needs
+[Playwright](https://playwright.dev) available, e.g. `npm i -D playwright`).
 
 ## Codon tables
 

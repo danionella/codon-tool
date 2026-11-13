@@ -6,8 +6,8 @@
  * fields and the same random seed) and compares the optimized sequence and every
  * variant against codon.js's optimize() called with matching options.
  *
- * Requires Playwright (dev-only): `npm install` then `node test/equivalence.test.js`.
- * The library and CLI themselves have no dependencies.
+ * Requires Playwright (dev-only), e.g. `npm i -D playwright`, then run with
+ * `node test/equivalence.test.js`. The library itself has no dependencies.
  */
 const path = require('path');
 const assert = require('assert');
